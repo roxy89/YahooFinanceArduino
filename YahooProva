@@ -1,0 +1,91 @@
+// Importo le librerie Ethernet
+#include <SPI.h>
+#include <Ethernet.h>
+
+// Impostazioni base
+byte mac[] = {  0x90, 0xA2,0xDA, 0x0F, 0x3A, 0xD8 }; // MAC address
+byte server[] = { 206,190,36,45 }; // Yahoo (http://www.yahoo.com)
+char serverName[] = "it.finance.yahoo.com";
+byte ip[] = { 192, 168, 1, 128 };
+byte subnet[] = { 255, 255, 255, 0 };
+byte gateway[] = {192,168,160,254};
+byte dns_server[] = {192,167,9,240};
+
+
+// Creo un client Ethernet
+EthernetClient client;
+
+void setup()
+{
+  // Imposto una connessione seriale per verificare i dati.
+  Serial.begin(9600);
+  Ethernet.begin(mac);
+  // Connessione Ethernet usando MAC e DHCP (IP dinamico)
+  if(Ethernet.begin(mac) == 0) 
+  {
+    Serial.println("Errore nel configurare Ethernet usando DHCP");
+    while(true) // non ha senso continuare, percio' entriamo in loop
+    ;
+  }
+
+  // Diamo alla Ethernet shield un secondo per inizializzarsi
+  delay(1000); 
+
+  // Stampa sul monitor seriale l'indirizzo IP di Arduino
+  Serial.print("Indirizzo IP: ");
+  IPAddress myIPAddress = Ethernet.localIP();
+  Serial.println(myIPAddress);
+
+  // Mi collego al server sulla porta 80, e richiedo le informazioni finanzarie
+  if (client.connect(serverName, 80) == 1) 
+  {
+    Serial.println("Connesso");
+   // client.println("GET finance.yahoo.com/echarts?s=GOOG HTTP/1.1");
+    client.println("GET /query.yahooapis.com/v1/public/yql?q=select%20LastTradePriceOnly%20from%20yahoo.finance.quote%20where%20symbol%20in%20(%22GOOG%22)&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys HTTP/1.1");
+    Serial.println("Connesso a yahoo");
+    client.println(); // FONDAMENTALE per poter leggere i risultati ottenuti!
+  }
+  else 
+  {
+    Serial.println("Connessione fallita");
+  }
+}
+
+void loop()
+{
+  // Se la richiesta della pagina ha avuto successo
+  if (client.available()) 
+  {
+   // Serial.println("Sono nel client");
+    
+    // Leggo la risposta, carattere per carattere
+    char c = client.read();
+    // Stampo i dati ricevuti sul monitor seriale
+    //Serial.print(c); 
+    
+  
+   
+    // Cerco il valore che mi interessa
+    // Gli apici (",') all'interno delle stringhe vanno scritti con lo slash davanti (\",\')
+    if (client.find("<LastTradePriceOnly>")) { 
+    
+      // Salto al successivo '>'
+      //client.find(">"); 
+      // Ottengo il valore
+      float value = client.parseFloat(); 
+      // Stampo il risultato
+      Serial.print("Il valore delle azioni di Google: ");
+      Serial.println(value);
+      
+    }
+  }
+  
+  // Quando ho finito, mi scollego
+  if (!client.connected()) 
+  {
+    Serial.println("Disconnetto");
+    client.stop();
+
+    while(true) ; // loop infinito
+  }
+}
