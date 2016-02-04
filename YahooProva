@@ -1,3 +1,4 @@
+
 // Importo le librerie Ethernet
 #include <SPI.h>
 #include <Ethernet.h>
@@ -5,7 +6,7 @@
 // Impostazioni base
 byte mac[] = {  0x90, 0xA2,0xDA, 0x0F, 0x3A, 0xD8 }; // MAC address
 byte server[] = { 206,190,36,45 }; // Yahoo (http://www.yahoo.com)
-char serverName[] = "it.finance.yahoo.com";
+char serverName[] = "query.yahooapis.com";
 byte ip[] = { 192, 168, 1, 128 };
 byte subnet[] = { 255, 255, 255, 0 };
 byte gateway[] = {192,168,160,254};
@@ -41,7 +42,7 @@ void setup()
   {
     Serial.println("Connesso");
    // client.println("GET finance.yahoo.com/echarts?s=GOOG HTTP/1.1");
-    client.println("GET /query.yahooapis.com/v1/public/yql?q=select%20LastTradePriceOnly%20from%20yahoo.finance.quote%20where%20symbol%20in%20(%22GOOG%22)&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys HTTP/1.1");
+    client.println("GET query.yahooapis.com/v1/public/yql?q=select%20LastTradePriceOnly%20from%20yahoo.finance.quote%20where%20symbol%20in%20(%22GOOG%22)&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys HTTP/1.1 ");
     Serial.println("Connesso a yahoo");
     client.println(); // FONDAMENTALE per poter leggere i risultati ottenuti!
   }
