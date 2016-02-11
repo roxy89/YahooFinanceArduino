@@ -20,7 +20,9 @@ byte dns_server[] = {192,167,9,240};
 // Creo un client Ethernet
 EthernetClient client;
 float valore;
+
 File myFile;
+
 
 void setup()
 {
@@ -56,7 +58,7 @@ void setup()
 
   
    //apre un file e se non esiste lo crea
-  SD.remove("quota.txt"); //uso la rimozione ogni qualvolta mi serve cancellare i dati sulla SD
+  //SD.remove("quota.txt"); //uso la rimozione ogni qualvolta mi serve cancellare i dati sulla SD
    myFile = SD.open("quota.txt",FILE_WRITE );
 
   // Mi collego al server sulla porta 80, e richiedo le informazioni finanzarie
@@ -73,21 +75,15 @@ void setup()
     Serial.println(F("Connessione fallita!"));
   }
 
-
-
-
-
-
-
-  
 }
 
 void loop()
-{
+{ 
+     
   // Se la richiesta della pagina ha avuto successo
   if (client.available()) 
   {
-    Serial.println(F("Sono nel client\n"));
+    Serial.println(F("\nSono nel client!"));
     Serial.println(F("Cerco il valore....\n"));
     // Leggo la risposta, carattere per carattere
     char c = client.read();
@@ -101,11 +97,11 @@ void loop()
       // Stampo il risultato
       Serial.print(F("->Il valore delle azioni di Google: "));
       Serial.println(valore);
-     
+      
     }
-    setTime(23,14,10,04,02,2016);// da settare ogni volta che si fa la quotazione
- 
-
+    setTime(21,34,44,11,02,2016);// da settare ogni volta che si fa la quotazione
+   
+    
 if (myFile)
     {
       Serial.println(F("\nScrivo su quota.txt ......"));
@@ -161,8 +157,7 @@ if (myFile)
    
   }
   
-  
-  
+ 
   // Quando ho finito, mi scollego
   if (!client.connected()) 
   {
@@ -171,4 +166,5 @@ if (myFile)
 
     while(true) ; // loop infinito
   }
+
 }
