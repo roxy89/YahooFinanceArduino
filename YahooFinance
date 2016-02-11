@@ -1,0 +1,174 @@
+
+
+// Importo le librerie Ethernet
+#include <SPI.h>
+#include <Ethernet.h>
+#include <SD.h>
+#include <SPI.h>
+#include <Ethernet.h>
+#include <Time.h>
+
+// Impostazioni base
+byte mac[] = {  0x90, 0xA2,0xDA, 0x0F, 0x3A, 0xD8 }; // MAC address
+char serverName[] = "query.yahooapis.com";//YQL Yahoo
+byte ip[] = { 192, 168, 1, 128 };
+byte subnet[] = { 255, 255, 255, 0 };
+byte gateway[] = {192,168,160,254};
+byte dns_server[] = {192,167,9,240};
+
+
+// Creo un client Ethernet
+EthernetClient client;
+float valore;
+File myFile;
+
+void setup()
+{
+  // Imposto una connessione seriale per verificare i dati.
+  Serial.begin(9600);
+  Ethernet.begin(mac);
+  Serial.print(F("Inizializzazione SD Card....\n"));
+  
+  // Connessione Ethernet usando MAC e DHCP (IP dinamico)
+  if(Ethernet.begin(mac) == 0) 
+  {
+    Serial.println(F("Errore nel configurare Ethernet usando DHCP"));
+    while(true); // non ha senso continuare, percio' entriamo in loop
+   }
+
+ //controllo SD
+  if (!SD.begin(4)) //uso il pin 4 e di default il 10 non lo setto altrimenti nn funziona la sd
+  {
+    Serial.println(F("Inizializzazione fallita!"));
+    return;
+  }
+
+
+  // Diamo alla Ethernet shield un secondo per inizializzarsi
+  delay(1000); 
+
+  Serial.println(F("Fatta Inizializzazione."));
+  
+  // Stampa sul monitor seriale l'indirizzo IP di Arduino
+  Serial.print(F("Indirizzo IP: "));
+  IPAddress myIPAddress = Ethernet.localIP();
+  Serial.println(myIPAddress);
+
+  
+   //apre un file e se non esiste lo crea
+  SD.remove("quota.txt"); //uso la rimozione ogni qualvolta mi serve cancellare i dati sulla SD
+   myFile = SD.open("quota.txt",FILE_WRITE );
+
+  // Mi collego al server sulla porta 80, e richiedo le informazioni finanzarie
+  if (client.connect(serverName, 80) == 1) 
+  {
+    Serial.println(F("Connesso"));
+    client.println("GET query.yahooapis.com/v1/public/yql?q=select%20LastTradePriceOnly%20from%20yahoo.finance.quote%20where%20symbol%20in%20(%22GOOG%22)&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys HTTP/1.1 ");
+    Serial.println(F("***Connesso a Yahoo Finance***"));
+    client.println(); // FONDAMENTALE per poter leggere i risultati ottenuti!
+  //client.println() significa ho finito la mia richiesta, questo perchè devo far capire al serv che ho finito di scrivere e che non ci sono header
+  }
+  else 
+  {
+    Serial.println(F("Connessione fallita!"));
+  }
+
+
+
+
+
+
+
+  
+}
+
+void loop()
+{
+  // Se la richiesta della pagina ha avuto successo
+  if (client.available()) 
+  {
+    Serial.println(F("Sono nel client\n"));
+    Serial.println(F("Cerco il valore....\n"));
+    // Leggo la risposta, carattere per carattere
+    char c = client.read();
+    
+    // Cerco il valore che mi interessa
+    // Gli apici (",') all'interno delle stringhe vanno scritti con lo slash davanti (\",\')
+    if (client.find("<LastTradePriceOnly>")) { 
+    Serial.println(F("Ho trovato il valore che cercavi!\n"));
+      // Ottengo il valore
+       valore = client.parseFloat(); 
+      // Stampo il risultato
+      Serial.print(F("->Il valore delle azioni di Google: "));
+      Serial.println(valore);
+     
+    }
+    setTime(23,14,10,04,02,2016);// da settare ogni volta che si fa la quotazione
+ 
+
+if (myFile)
+    {
+      Serial.println(F("\nScrivo su quota.txt ......"));
+      myFile.println("*****Quotazione Google*****");
+      myFile.print("->: ");
+      myFile.println(valore);
+      myFile.print("Tempo: ");
+      myFile.print(hour());
+      myFile.print(":");
+      myFile.print(minute());
+      myFile.print(":");
+      myFile.println(second());
+      myFile.print("Data= ");
+      myFile.print(day());
+      myFile.print("/");
+      myFile.print(month());
+      myFile.print("/");
+      myFile.println(year());
+
+     
+      myFile.close();
+    
+      
+     Serial.println(F("-->FATTO!"));
+    }
+    else
+    {
+      Serial.println(F("errore apertura quotazione.txt per scrivere!"));
+    }
+    
+ 
+
+    //Riaprire il file per la lettura
+    myFile=SD.open("quota.txt");
+    if(myFile)
+    {
+      Serial.println(F("\n \n \n \n \n \n--> Il file quota.txt presenta questo contenuto: "));
+      
+      //leggere fino a quando non c'e' altro in esso
+      while(myFile.available())
+      {
+        Serial.write(myFile.read());
+      }
+      //myFile.flush();
+      myFile.close();
+    }
+    else
+    {
+      Serial.println(F("Errore apertura file per leggere"));
+    }
+   
+
+   
+  }
+  
+  
+  
+  // Quando ho finito, mi scollego
+  if (!client.connected()) 
+  {
+    Serial.println(F("***Disconnetto da Yahoo Finance***"));
+    client.stop();
+
+    while(true) ; // loop infinito
+  }
+}
